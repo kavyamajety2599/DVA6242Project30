@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { type Grant } from './data/GrantData';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
-type SortField = 'title' | 'agency' | 'field' | 'probability' | 'confidence';
+type SortField = 'title' | 'field' | 'probability' | 'confidence';
 
 interface GrantTableProps {
   grants: Grant[];
@@ -39,10 +39,6 @@ export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
         case 'title':
           aValue = a.title;
           bValue = b.title;
-          break;
-        case 'agency':
-          aValue = a.agency;
-          bValue = b.agency;
           break;
         case 'field':
           aValue = a.field;
@@ -112,9 +108,9 @@ export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
                 <TableHead className="w-[300px]">
                   <SortButton field="title" label="Title" />
                 </TableHead>
-                <TableHead>
+                {/* <TableHead>
                   <SortButton field="agency" label="Agency" />
-                </TableHead>
+                </TableHead> */}
                 <TableHead>
                   <SortButton field="field" label="Field" />
                 </TableHead>
@@ -139,9 +135,9 @@ export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
                         {grant.title}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <Badge variant="outline">{grant.agency}</Badge>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>
                       <span className="text-sm text-slate-600">{grant.field}</span>
                     </TableCell>
