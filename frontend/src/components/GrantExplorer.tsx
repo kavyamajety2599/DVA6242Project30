@@ -15,10 +15,11 @@ import { Settings, Search } from 'lucide-react';
 export function GrantExplorer() {
   const [yearRange, setYearRange] = useState<number[]>([1980, 2025]);
   const [searchQuery, setSearchQuery] = useState('');
+  
   const [biasAdjustments, setBiasAdjustments] = useState<BiasAdjustments>({
     genderBias: 0,
     raceBias: 0,
-    institutionBias: 0,
+    institutionBias: 0, 
     experienceBias: 0,
   });
   const [showAdjusted, setShowAdjusted] = useState(false);
@@ -43,15 +44,14 @@ export function GrantExplorer() {
     return filteredGrants.map(grant => {
       let adjustedTerminationProb = grant.terminationProbability;
       
+    
       if (grant.gender === 'Female') {
         adjustedTerminationProb -= biasAdjustments.genderBias * 0.01;
       }
       if (grant.race === 'Minority') {
         adjustedTerminationProb -= biasAdjustments.raceBias * 0.01;
       }
-      if (grant.institutionPrestige === 'Low') {
-        adjustedTerminationProb -= biasAdjustments.institutionBias * 0.01;
-      }
+
       if (grant.piExperience < 5) {
         adjustedTerminationProb -= biasAdjustments.experienceBias * 0.01;
       }
@@ -99,6 +99,8 @@ export function GrantExplorer() {
     setShowAdjusted(false);
   };
 
+  const biasControlsActive = Object.values(biasAdjustments).some(v => v > 0);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto p-6 space-y-6">
@@ -115,7 +117,11 @@ export function GrantExplorer() {
               <CardTitle>Filters & Controls</CardTitle>
               <Sheet>
                 <SheetTrigger asChild>
-                
+                  <Button variant={biasControlsActive ? "default" : "outline"} size="sm">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Bias Controls
+                    {biasControlsActive && <Badge variant="secondary" className="ml-2">Active</Badge>}
+                  </Button>
                 </SheetTrigger>
                 <SheetContent>
                   <SheetHeader>
@@ -155,20 +161,6 @@ export function GrantExplorer() {
                       <p className="text-sm text-slate-600">Reduces risk score for minority PIs</p>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <Label>Institution Bias Correction</Label>
-                        <Badge variant="secondary">{biasAdjustments.institutionBias}%</Badge>
-                      </div>
-                      <Slider
-                        value={[biasAdjustments.institutionBias]}
-                        onValueChange={(val) => handleBiasAdjustment('institutionBias', val)}
-                        min={0}
-                        max={20}
-                        step={1}
-                      />
-                      <p className="text-sm text-slate-600">Reduces risk score for low-prestige institutions</p>
-                    </div>
 
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
@@ -184,13 +176,18 @@ export function GrantExplorer() {
                       />
                       <p className="text-sm text-slate-600">Reduces risk score for early-career researchers</p>
                     </div>
+
+                    {biasControlsActive && (
+                      <Button onClick={resetBiasAdjustments} variant="outline" className="w-full">
+                        Reset All Adjustments
+                      </Button>
+                    )}
                   </div>
                 </SheetContent>
               </Sheet>
             </div>
           </CardHeader>
           <CardContent>
-            {/* Columns for Year and Search */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Year Range: {yearRange[0]} - {yearRange[1]}</Label>

@@ -52,31 +52,8 @@ export function BiasMetrics({ grants, fairnessMetrics, showAdjusted }: BiasMetri
     },
   ];
 
-  const institutionData = [
-    {
-      group: 'High Prestige',
-      rate: grants.filter(g => g.institutionPrestige === 'High' && g.terminated).length / 
-            (grants.filter(g => g.institutionPrestige === 'High').length || 1) * 100,
-      avgProb: grants.filter(g => g.institutionPrestige === 'High').reduce((sum, g) => sum + getProbability(g), 0) / 
-               (grants.filter(g => g.institutionPrestige === 'High').length || 1) * 100,
-    },
-    {
-      group: 'Medium Prestige',
-      rate: grants.filter(g => g.institutionPrestige === 'Medium' && g.terminated).length / 
-            (grants.filter(g => g.institutionPrestige === 'Medium').length || 1) * 100,
-      avgProb: grants.filter(g => g.institutionPrestige === 'Medium').reduce((sum, g) => sum + getProbability(g), 0) / 
-               (grants.filter(g => g.institutionPrestige === 'Medium').length || 1) * 100,
-    },
-    {
-      group: 'Low Prestige',
-      rate: grants.filter(g => g.institutionPrestige === 'Low' && g.terminated).length / 
-            (grants.filter(g => g.institutionPrestige === 'Low').length || 1) * 100,
-      avgProb: grants.filter(g => g.institutionPrestige === 'Low').reduce((sum, g) => sum + getProbability(g), 0) / 
-               (grants.filter(g => g.institutionPrestige === 'Low').length || 1) * 100,
-    },
-  ];
 
-  const allGroupData = [...genderData, ...raceData, ...institutionData];
+  const allGroupData = [...genderData, ...raceData]; 
 
   const getFairnessColor = (score: number) => {
     if (score >= 0.9) return 'text-green-600';
@@ -184,32 +161,7 @@ export function BiasMetrics({ grants, fairnessMetrics, showAdjusted }: BiasMetri
                 {getFairnessLabel(fairnessMetrics.equalityOfOpportunity.race)}
               </span>
             </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Institution (DP)</span>
-                <Badge className={getFairnessColor(fairnessMetrics.demographicParity.institution)}>
-                  {fairnessMetrics.demographicParity.institution.toFixed(2)}
-                </Badge>
-              </div>
-              <Progress value={fairnessMetrics.demographicParity.institution * 100} className="h-2" />
-              <span className="text-xs text-slate-500">
-                {getFairnessLabel(fairnessMetrics.demographicParity.institution)}
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Institution (EO)</span>
-                <Badge className={getFairnessColor(fairnessMetrics.equalityOfOpportunity.institution)}>
-                  {fairnessMetrics.equalityOfOpportunity.institution.toFixed(2)}
-                </Badge>
-              </div>
-              <Progress value={fairnessMetrics.equalityOfOpportunity.institution * 100} className="h-2" />
-              <span className="text-xs text-slate-500">
-                {getFairnessLabel(fairnessMetrics.equalityOfOpportunity.institution)}
-              </span>
-            </div>
+            
           </div>
         </div>
 
