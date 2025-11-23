@@ -12,16 +12,34 @@ interface WordCloudProps {
 export function WordCloud({ keywordData }: WordCloudProps) {
   const [selectedKeyword, setSelectedKeyword] = useState<KeywordData | null>(null);
 
-  // Take top 30 keywords
+  if (!keywordData || keywordData.length === 0) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle>Termination Word Cloud</CardTitle>
+          <CardDescription>No keyword data available for the current filters.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center min-h-[300px] text-slate-400">
+          Try adjusting your search or year range.
+        </CardContent>
+      </Card>
+    );
+  }
+
+
   const topKeywords = keywordData.slice(0, 30);
 
-  // Calculate sizes based on frequency
-  const maxFreq = Math.max(...topKeywords.map(k => k.frequency), 1);
-  const minFreq = Math.min(...topKeywords.map(k => k.frequency), 1);
+
+  const maxFreq = Math.max(...topKeywords.map(k => k.frequency), 0);
+  const minFreq = Math.min(...topKeywords.map(k => k.frequency), maxFreq);
 
   const getSize = (freq: number) => {
-    const normalized = (freq - minFreq) / (maxFreq - minFreq);
-    return 12 + normalized * 32; // 12px to 44px
+    const denominator = maxFreq - minFreq;
+
+    if (denominator === 0) return 24; 
+    
+    const normalized = (freq - minFreq) / denominator;
+    return 12 + normalized * 32; 
   };
 
   const getColor = (weight: number) => {
@@ -42,7 +60,7 @@ export function WordCloud({ keywordData }: WordCloudProps) {
 
   return (
     <>
-      <Card>
+      <Card className="h-full">
         <CardHeader>
           <CardTitle>Termination Word Cloud</CardTitle>
           <CardDescription>
@@ -50,7 +68,7 @@ export function WordCloud({ keywordData }: WordCloudProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="min-h-[400px] flex flex-wrap gap-3 items-center justify-center p-4">
+          <div className="min-h-[400px] flex flex-wrap gap-3 items-center justify-center p-4 content-start">
             {topKeywords.map((keyword, index) => {
               const fontSize = getSize(keyword.frequency);
               const colorClass = getColor(keyword.terminationWeight);
@@ -95,7 +113,6 @@ export function WordCloud({ keywordData }: WordCloudProps) {
         </CardContent>
       </Card>
 
-      {/* Keyword Detail Dialog */}
       <Dialog open={!!selectedKeyword} onOpenChange={() => setSelectedKeyword(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -147,8 +164,10 @@ export function WordCloud({ keywordData }: WordCloudProps) {
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm text-slate-900 flex-1">{grant.title}</p>
-                        <div className="flex items-center gap-2">
+                        <p className="text-sm text-slate-900 flex-1 truncate">
+                          {grant.title}
+                        </p>
+                        <div className="flex items-center gap-2 shrink-0">
                           <Badge variant={grant.terminated ? "destructive" : "default"}>
                             {grant.terminated ? 'Terminated' : 'Active'}
                           </Badge>

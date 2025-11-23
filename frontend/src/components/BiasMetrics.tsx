@@ -18,21 +18,20 @@ export function BiasMetrics({ grants, fairnessMetrics, showAdjusted }: BiasMetri
       ? (g as any).adjustedTerminationProb 
       : g.terminationProbability;
 
-  // Calculate termination rates by group
   const genderData = [
     {
       group: 'Male',
       rate: grants.filter(g => g.gender === 'Male' && g.terminated).length / 
-            grants.filter(g => g.gender === 'Male').length * 100,
+            (grants.filter(g => g.gender === 'Male').length || 1) * 100,
       avgProb: grants.filter(g => g.gender === 'Male').reduce((sum, g) => sum + getProbability(g), 0) / 
-               grants.filter(g => g.gender === 'Male').length * 100,
+               (grants.filter(g => g.gender === 'Male').length || 1) * 100,
     },
     {
       group: 'Female',
       rate: grants.filter(g => g.gender === 'Female' && g.terminated).length / 
-            grants.filter(g => g.gender === 'Female').length * 100,
+            (grants.filter(g => g.gender === 'Female').length || 1) * 100,
       avgProb: grants.filter(g => g.gender === 'Female').reduce((sum, g) => sum + getProbability(g), 0) / 
-               grants.filter(g => g.gender === 'Female').length * 100,
+               (grants.filter(g => g.gender === 'Female').length || 1) * 100,
     },
   ];
 
@@ -40,16 +39,16 @@ export function BiasMetrics({ grants, fairnessMetrics, showAdjusted }: BiasMetri
     {
       group: 'Minority',
       rate: grants.filter(g => g.race === 'Minority' && g.terminated).length / 
-            grants.filter(g => g.race === 'Minority').length * 100,
+            (grants.filter(g => g.race === 'Minority').length || 1) * 100,
       avgProb: grants.filter(g => g.race === 'Minority').reduce((sum, g) => sum + getProbability(g), 0) / 
-               grants.filter(g => g.race === 'Minority').length * 100,
+               (grants.filter(g => g.race === 'Minority').length || 1) * 100,
     },
     {
       group: 'Non-Minority',
       rate: grants.filter(g => g.race === 'Non-Minority' && g.terminated).length / 
-            grants.filter(g => g.race === 'Non-Minority').length * 100,
+            (grants.filter(g => g.race === 'Non-Minority').length || 1) * 100,
       avgProb: grants.filter(g => g.race === 'Non-Minority').reduce((sum, g) => sum + getProbability(g), 0) / 
-               grants.filter(g => g.race === 'Non-Minority').length * 100,
+               (grants.filter(g => g.race === 'Non-Minority').length || 1) * 100,
     },
   ];
 
@@ -57,27 +56,27 @@ export function BiasMetrics({ grants, fairnessMetrics, showAdjusted }: BiasMetri
     {
       group: 'High Prestige',
       rate: grants.filter(g => g.institutionPrestige === 'High' && g.terminated).length / 
-            grants.filter(g => g.institutionPrestige === 'High').length * 100,
+            (grants.filter(g => g.institutionPrestige === 'High').length || 1) * 100,
       avgProb: grants.filter(g => g.institutionPrestige === 'High').reduce((sum, g) => sum + getProbability(g), 0) / 
-               grants.filter(g => g.institutionPrestige === 'High').length * 100,
+               (grants.filter(g => g.institutionPrestige === 'High').length || 1) * 100,
     },
     {
       group: 'Medium Prestige',
       rate: grants.filter(g => g.institutionPrestige === 'Medium' && g.terminated).length / 
-            grants.filter(g => g.institutionPrestige === 'Medium').length * 100,
+            (grants.filter(g => g.institutionPrestige === 'Medium').length || 1) * 100,
       avgProb: grants.filter(g => g.institutionPrestige === 'Medium').reduce((sum, g) => sum + getProbability(g), 0) / 
-               grants.filter(g => g.institutionPrestige === 'Medium').length * 100,
+               (grants.filter(g => g.institutionPrestige === 'Medium').length || 1) * 100,
     },
     {
       group: 'Low Prestige',
       rate: grants.filter(g => g.institutionPrestige === 'Low' && g.terminated).length / 
-            grants.filter(g => g.institutionPrestige === 'Low').length * 100,
+            (grants.filter(g => g.institutionPrestige === 'Low').length || 1) * 100,
       avgProb: grants.filter(g => g.institutionPrestige === 'Low').reduce((sum, g) => sum + getProbability(g), 0) / 
-               grants.filter(g => g.institutionPrestige === 'Low').length * 100,
+               (grants.filter(g => g.institutionPrestige === 'Low').length || 1) * 100,
     },
   ];
 
-  const allGroupData = [...genderData, ...raceData];
+  const allGroupData = [...genderData, ...raceData, ...institutionData];
 
   const getFairnessColor = (score: number) => {
     if (score >= 0.9) return 'text-green-600';
@@ -100,7 +99,6 @@ export function BiasMetrics({ grants, fairnessMetrics, showAdjusted }: BiasMetri
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Bar Chart */}
         <div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={allGroupData}>
@@ -115,7 +113,6 @@ export function BiasMetrics({ grants, fairnessMetrics, showAdjusted }: BiasMetri
           </ResponsiveContainer>
         </div>
 
-        {/* Fairness Metrics */}
         <div className="space-y-4 pt-4 border-t">
           <div className="flex items-center gap-2">
             <h4 className="font-medium text-slate-900">Fairness Metrics</h4>

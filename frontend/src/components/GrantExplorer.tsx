@@ -99,12 +99,9 @@ export function GrantExplorer() {
     setShowAdjusted(false);
   };
 
-  //const biasControlsActive = Object.values(biasAdjustments).some(v => v > 0);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
         <div className="space-y-2">
           <h1 className="text-slate-900">Grant Termination Dashboard</h1>
           <p className="text-slate-600">
@@ -112,18 +109,13 @@ export function GrantExplorer() {
           </p>
         </div>
 
-        {/* Top Section - Filters & Controls */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Filters & Controls</CardTitle>
               <Sheet>
                 <SheetTrigger asChild>
-                  {/* <Button variant={biasControlsActive ? "default" : "outline"} size="sm">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Bias Controls
-                    {biasControlsActive && <Badge variant="secondary" className="ml-2">Active</Badge>}
-                  </Button> */}
+                
                 </SheetTrigger>
                 <SheetContent>
                   <SheetHeader>
@@ -192,19 +184,13 @@ export function GrantExplorer() {
                       />
                       <p className="text-sm text-slate-600">Reduces risk score for early-career researchers</p>
                     </div>
-
-                    {/* {biasControlsActive && (
-                      <Button onClick={resetBiasAdjustments} variant="outline" className="w-full">
-                        Reset All Adjustments
-                      </Button>
-                    )} */}
                   </div>
                 </SheetContent>
               </Sheet>
             </div>
           </CardHeader>
           <CardContent>
-            {/* Updated Grid: 2 Columns for Year and Search */}
+            {/* Columns for Year and Search */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Year Range: {yearRange[0]} - {yearRange[1]}</Label>
@@ -249,7 +235,6 @@ export function GrantExplorer() {
           </CardContent>
         </Card>
 
-        {/* Middle Section - Word Cloud & Bias Metrics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <WordCloud keywordData={keywordData} />
           <BiasMetrics 
@@ -259,7 +244,6 @@ export function GrantExplorer() {
           />
         </div>
 
-        {/* Bottom Section - Grant Details Table */}
         <GrantTable grants={displayGrants} showAdjusted={showAdjusted} />
       </div>
     </div>

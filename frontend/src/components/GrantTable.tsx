@@ -199,8 +199,6 @@ export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
             </TableBody>
           </Table>
         </div>
-
-        {/* Pagination */}
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-slate-600">
             Page {currentPage} of {totalPages}
