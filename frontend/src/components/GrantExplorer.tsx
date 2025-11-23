@@ -99,7 +99,7 @@ export function GrantExplorer() {
     setShowAdjusted(false);
   };
 
-  const biasControlsActive = Object.values(biasAdjustments).some(v => v > 0);
+  // const biasControlsActive = Object.values(biasAdjustments).some(v => v > 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -117,11 +117,11 @@ export function GrantExplorer() {
               <CardTitle>Filters & Controls</CardTitle>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant={biasControlsActive ? "default" : "outline"} size="sm">
+                  {/* <Button variant={biasControlsActive ? "default" : "outline"} size="sm">
                     <Settings className="w-4 h-4 mr-2" />
                     Bias Controls
                     {biasControlsActive && <Badge variant="secondary" className="ml-2">Active</Badge>}
-                  </Button>
+                  </Button> */}
                 </SheetTrigger>
                 <SheetContent>
                   <SheetHeader>
@@ -177,11 +177,11 @@ export function GrantExplorer() {
                       <p className="text-sm text-slate-600">Reduces risk score for early-career researchers</p>
                     </div>
 
-                    {biasControlsActive && (
+                    {/* {biasControlsActive && (
                       <Button onClick={resetBiasAdjustments} variant="outline" className="w-full">
                         Reset All Adjustments
                       </Button>
-                    )}
+                    )} */}
                   </div>
                 </SheetContent>
               </Sheet>
