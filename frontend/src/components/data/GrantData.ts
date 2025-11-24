@@ -60,10 +60,7 @@ export interface FairnessMetrics {
   };
 }
 
-// --- DATA LOADING & MAPPING ---
 export function generateGrantData(): Grant[] {
-  // 1. Create a Metadata Lookup Map from final_project_data.json
-  // Key: award_number, Value: The full metadata object
   const metadataMap = new Map<string, any>();
   (grantTableData as any[]).forEach((item) => {
     if (item.award_number) {
@@ -71,13 +68,12 @@ export function generateGrantData(): Grant[] {
     }
   });
 
-  // 2. Map the grants.json data, overriding fields with metadata if a match is found
   return (grantsData as any[]).map((item) => {
-    // Normalize the ID to match against the lookup map
+
     const awardNum = String(item.awardNumber || item.award_number || item.id || "Unknown");
     
+
     const meta = metadataMap.get(awardNum) || {};
-   // console.log(grantTableData);
     return {
       ...item,
       id: String(item.id || awardNum),
@@ -110,7 +106,8 @@ export function generateGrantData(): Grant[] {
 
 export function calculateKeywordData(grants: Grant[]): KeywordData[] {
   const biasLookup = new Map<string, any>();
-  (wordBiasData as any[]).forEach((item: any) => {
+  const targetWords = (wordBiasData as any[]).slice(-60);
+  (targetWords as any[]).forEach((item: any) => {
     if (item.term) biasLookup.set(item.term.toLowerCase(), item);
   });
 

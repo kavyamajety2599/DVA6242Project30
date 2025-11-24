@@ -6,7 +6,6 @@ import { Button } from './ui/button';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import projectData from './data/final_project_data.json';
 
-// --- 2. DEFINE LOCAL INTERFACE FOR THE JSON STRUCTURE ---
 interface ProjectData {
   award_number: string;
   project_title: string;
@@ -14,17 +13,16 @@ interface ProjectData {
   awarding_office: string;
   award_amount: number;
   grant_status: string;
-  bias_flags: string | null; // It comes as a string "race, gender" or null
+  bias_flags: string | null;
 }
 
-// We ignore the props passed from parent since we are using the JSON directly
 interface GrantTableProps {
-  grants: any[]; 
-  showAdjusted: boolean;
+  searchQuery: string;
+  grants?: any[]; 
+  showAdjusted?: boolean;
 }
 
-export function GrantTable({ grants: _ignoredGrants }: GrantTableProps) {
-  // Use the imported JSON as the data source
+export function GrantTable({ searchQuery }: GrantTableProps) {
   const data = projectData as ProjectData[];
 
   const [sortField, setSortField] = useState<keyof ProjectData>('award_amount');
@@ -32,7 +30,19 @@ export function GrantTable({ grants: _ignoredGrants }: GrantTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  // --- Sorting Logic ---
+  // --- FILTERING LOGIC ---
+  // This runs only on the table data, not affecting the charts
+  const filteredData = useMemo(() => {
+    if (!searchQuery) return data;
+    const lowerQuery = searchQuery.toLowerCase();
+    
+    return data.filter(item => 
+      (item.project_title && item.project_title.toLowerCase().includes(lowerQuery)) ||
+      (item.recipient_name && item.recipient_name.toLowerCase().includes(lowerQuery)) ||
+      (item.award_number && item.award_number.toLowerCase().includes(lowerQuery))
+    );
+  }, [data, searchQuery]);
+
   const handleSort = (field: keyof ProjectData) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -43,15 +53,13 @@ export function GrantTable({ grants: _ignoredGrants }: GrantTableProps) {
   };
 
   const sortedData = useMemo(() => {
-    return [...data].sort((a, b) => {
+    return [...filteredData].sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
 
-      // Numeric Sort (Amount)
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       }
-      // String Sort
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc' 
           ? aValue.localeCompare(bValue) 
@@ -59,14 +67,14 @@ export function GrantTable({ grants: _ignoredGrants }: GrantTableProps) {
       }
       return 0;
     });
-  }, [data, sortField, sortDirection]);
+  }, [filteredData, sortField, sortDirection]);
 
-  // --- Pagination ---
+  // --- PAGINATION ---
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentData = sortedData.slice(startIndex, startIndex + itemsPerPage);
 
-  // --- Helpers ---
+  // --- HELPERS ---
   const getStatusColor = (status: string) => {
     if (status === 'Active') return 'outline'; 
     if (status === 'Terminated') return 'destructive';
@@ -80,7 +88,6 @@ export function GrantTable({ grants: _ignoredGrants }: GrantTableProps) {
     return 'secondary';
   };
 
-  // Helper to parse "race, gender" string into array
   const parseFlags = (flagStr: string | null) => {
     if (!flagStr) return [];
     return flagStr.split(',').map(s => s.trim()).filter(s => s);
@@ -111,94 +118,46 @@ export function GrantTable({ grants: _ignoredGrants }: GrantTableProps) {
                 <TableHead><SortButton field="awarding_office" label="Agency" /></TableHead>
                 <TableHead className="text-right"><SortButton field="award_amount" label="Amount" /></TableHead>
                 <TableHead><SortButton field="grant_status" label="Status" /></TableHead>
-                {/* <TableHead>Bias Flags</TableHead> */}
+                <TableHead>Bias Flags</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {currentData.map((item, idx) => (
                 <TableRow key={`${item.award_number}-${idx}`} className="hover:bg-slate-50">
-                  
-                  {/* Award Number */}
-                  <TableCell className="font-mono text-xs font-medium text-slate-600">
-                    {item.award_number}
-                  </TableCell>
-
-                  {/* Title */}
-                  <TableCell>
-                    <div className="max-w-[350px] text-sm font-medium text-slate-900 truncate" title={item.project_title}>
-                      {item.project_title}
-                    </div>
-                  </TableCell>
-
-                  {/* Recipient */}
-                  <TableCell className="text-xs text-slate-600 max-w-[200px] truncate" title={item.recipient_name}>
-                    {item.recipient_name}
-                  </TableCell>
-
-                  {/* Agency */}
-                  <TableCell>
-                    <Badge variant="outline" className="font-normal text-slate-600">
-                      {item.awarding_office}
-                    </Badge>
-                  </TableCell>
-
-                  {/* Amount */}
+                  <TableCell className="font-mono text-xs font-medium text-slate-600">{item.award_number}</TableCell>
+                  <TableCell><div className="max-w-[350px] text-sm font-medium text-slate-900 truncate" title={item.project_title}>{item.project_title}</div></TableCell>
+                  <TableCell><div className="text-xs text-slate-600 max-w-[200px] truncate" title={item.recipient_name}>{item.recipient_name}</div></TableCell>
+                  <TableCell><Badge variant="outline" className="font-normal text-slate-600">{item.awarding_office}</Badge></TableCell>
                   <TableCell className="text-right font-mono text-sm text-slate-700">
                     {item.award_amount 
                       ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(item.award_amount)
                       : <span className="text-slate-400">-</span>}
                   </TableCell>
-
-                  {/* Status */}
                   <TableCell>
                     <Badge variant={getStatusColor(item.grant_status)} className={item.grant_status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : ''}>
                       {item.grant_status}
                     </Badge>
                   </TableCell>
-
-                  {/* Bias Flags
                   <TableCell>
                     <div className="flex flex-wrap gap-1 max-w-[150px]">
                       {parseFlags(item.bias_flags).length > 0 ? (
                         parseFlags(item.bias_flags).map((flag, i) => (
-                          <Badge key={i} variant={getBiasColor(flag)} className="text-[10px] px-1 py-0 h-5">
-                            {flag}
-                          </Badge>
+                          <Badge key={i} variant={getBiasColor(flag)} className="text-[10px] px-1 py-0 h-5">{flag}</Badge>
                         ))
-                      ) : (
-                        <span className="text-xs text-slate-300">-</span>
-                      )}
+                      ) : <span className="text-xs text-slate-300">-</span>}
                     </div>
-                  </TableCell> */}
-
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
 
-        {/* Pagination Controls */}
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-slate-500">
-            Page {currentPage} of {totalPages}
-          </p>
+          <p className="text-sm text-slate-500">Page {currentPage} of {totalPages}</p>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Next <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4 mr-1" /> Previous</Button>
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
           </div>
         </div>
       </CardContent>

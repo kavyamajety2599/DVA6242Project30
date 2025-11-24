@@ -26,18 +26,12 @@ export function WordCloud({ keywordData }: WordCloudProps) {
     );
   }
 
-  // --- LOGIC: Ensure a mix of Risk and Protective terms ---
-  
-  // 1. Split keywords into categories
-  const riskKeywords = keywordData.filter(k => k.riskLevel !== 'Protective');
-  const protectiveKeywords = keywordData.filter(k => k.riskLevel === 'Protective');
-
-  // 2. Select Top 30 Risk words + Top 10 Protective words
-  // This guarantees blue "Protective" words show up even if Risk words dominate the top of the list
-  const topKeywords = [
-    ...riskKeywords.slice(0, 30),
-    ...protectiveKeywords.slice(0, 10)
-  ].sort((a, b) => b.frequency - a.frequency); // Re-sort by frequency for the visual layout
+  // --- UPDATED LOGIC: Take strictly the last 40 words ---
+  // 1. slice(-40) grabs the last 40 items from the array
+  // 2. sort(...) re-orders them by frequency so the biggest words render nicely in the UI
+  const topKeywords = keywordData
+    .slice(-60)
+    .sort((a, b) => b.frequency - a.frequency);
 
   const maxFreq = Math.max(...topKeywords.map(k => k.frequency), 0);
   const minFreq = Math.min(...topKeywords.map(k => k.frequency), maxFreq);
@@ -151,43 +145,10 @@ export function WordCloud({ keywordData }: WordCloudProps) {
                   </Badge>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Frequency Score</p>
+                  <p className="text-sm text-slate-600">Frequency</p>
                   <p className="text-xl font-bold text-slate-900">
                     {selectedKeyword.frequency.toFixed(4)}
                   </p>
-                </div>
-              </div>
-
-              {/* Sample Grants List */}
-              <div>
-                <h4 className="font-medium text-slate-900 mb-3">Sample Grants</h4>
-                <div className="space-y-2">
-                  {selectedKeyword.sampleGrants.map((grant, index) => (
-                    <div
-                      key={index}
-                      className={`p-3 rounded-lg border ${
-                        grant.terminated 
-                          ? 'bg-red-50 border-red-200' 
-                          : 'bg-green-50 border-green-200'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm text-slate-900 flex-1 truncate" title={grant.title}>
-                          {grant.title}
-                        </p>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {grant.terminated ? (
-                            <Badge variant="destructive">Terminated</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-green-700 border-green-200 bg-white">Active</Badge>
-                          )}
-                          <span className="text-xs text-slate-500 font-mono">
-                            {(grant.confidence * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
