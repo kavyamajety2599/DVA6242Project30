@@ -26,9 +26,6 @@ export function WordCloud({ keywordData }: WordCloudProps) {
     );
   }
 
-  // --- UPDATED LOGIC: Take strictly the last 40 words ---
-  // 1. slice(-40) grabs the last 40 items from the array
-  // 2. sort(...) re-orders them by frequency so the biggest words render nicely in the UI
   const topKeywords = keywordData
     .slice(-60)
     .sort((a, b) => b.frequency - a.frequency);
@@ -40,7 +37,7 @@ export function WordCloud({ keywordData }: WordCloudProps) {
     const denominator = maxFreq - minFreq;
     if (denominator === 0) return 24;
     const normalized = (freq - minFreq) / denominator;
-    return 14 + normalized * 26; // Font size 14px to 40px
+    return 14 + normalized * 26; 
   };
 
   const getColor = (riskLevel: string) => {

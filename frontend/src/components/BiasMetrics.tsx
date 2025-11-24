@@ -1,10 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
 import { Info } from 'lucide-react';
-import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-
-
 import avgBiasData from './data/bias_avg_delta.json';
 import maxBiasData from './data/bias_strongest_delta.json';
 
@@ -24,17 +20,16 @@ export function BiasMetrics({ }: BiasMetricsProps) {
     { label: 'Climate', jsonKey: 'climate change' },
   ];
 
-
   const chartData = categories.map(cat => {
-    // @ts-ignore - Accessing JSON by string key
-    const avgVal = avgBiasData[cat.jsonKey] || 0;
     // @ts-ignore
-    const maxVal = maxBiasData[cat.jsonKey] || 0;
+    const rawAvg = avgBiasData[cat.jsonKey] || 0;
+    // @ts-ignore
+    const rawMax = maxBiasData[cat.jsonKey] || 0;
 
     return {
       group: cat.label,
-      "Average Bias": avgVal * 100,
-      "Max Bias": maxVal * 100
+      "Average Impact": rawAvg * -100, 
+      "Max Impact": rawMax * -100
     };
   });
 
@@ -64,7 +59,7 @@ export function BiasMetrics({ }: BiasMetricsProps) {
               />
               
               <YAxis 
-                label={{ value: 'Impact (Delta %)', angle: -90, position: 'insideLeft' }} 
+                label={{ value: 'Impact on Risk %', angle: -90, position: 'insideLeft' }} 
                 domain={['auto', 'auto']} 
               />
               
@@ -75,36 +70,53 @@ export function BiasMetrics({ }: BiasMetricsProps) {
               />
               
               <ReferenceLine y={0} stroke="#000" />
-              <Legend wrapperStyle={{ paddingTop: '20px' }} />
               
+              
+              {/* Average Impact Bar (Blue when negative, Red when positive) */}
               <Bar 
-                dataKey="Average Bias" 
-                fill="#3b82f6" 
+                dataKey="Average Impact" 
                 name="Avg Impact" 
-                radius={[2, 2, 2, 2]} 
                 barSize={20}
-              />
-              
+                radius={[2, 2, 2, 2]} 
+                minPointSize={3}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-avg-${index}`} 
+                    fill={entry["Average Impact"] >= 0 ? "#ef4444" : "#3b82f6"} 
+                  />
+                ))}
+              </Bar>
+
+              {/* Max Impact Bar (Dynamic Color) */}
               <Bar 
-                dataKey="Max Bias" 
-                fill="#ef4444" 
+                dataKey="Max Impact" 
                 name="Max Impact" 
+                barSize={15}
                 radius={[2, 2, 2, 2]} 
-                barSize={20}
-              />
+                fillOpacity={0.8}
+                minPointSize={3}
+              >
+                 {chartData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-max-${index}`} 
+                    fill={entry["Max Impact"] >= 0 ? "#cc4444" : "#4455dd"} 
+                  />
+                ))}
+              </Bar>
+
             </BarChart>
           </ResponsiveContainer>
         </div>
         
-        {/* Explanation Footer */}
         <div className="mt-4 p-3 bg-slate-50 rounded-md text-xs text-slate-600 border border-slate-100">
           <div className="flex items-start gap-2 mb-1">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-            <p><strong>Interpretation:</strong> Values represent the change in termination probability when bias terms are present.</p>
+            <p><strong>Interpretation:</strong></p>
           </div>
           <ul className="list-disc pl-9 space-y-1">
-            <li><strong>Positive (+):</strong> Terms increased risk (Model bias against topic).</li>
-            <li><strong>Negative (-):</strong> Terms decreased risk (Topic is protective).</li>
+            <li className="text-red-600"><strong>Positive (Red):</strong> Terms <u>increased</u> termination risk (Bias against topic).</li>
+            <li className="text-blue-600"><strong>Negative (Blue):</strong> Terms <u>reduced</u> termination risk (Protective topic).</li>
           </ul>
         </div>
       </CardContent>
