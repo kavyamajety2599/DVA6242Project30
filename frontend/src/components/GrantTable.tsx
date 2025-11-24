@@ -30,8 +30,7 @@ export function GrantTable({ searchQuery }: GrantTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  // --- FILTERING LOGIC ---
-  // This runs only on the table data, not affecting the charts
+  //This runs only on the table data, not affecting the charts
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
     const lowerQuery = searchQuery.toLowerCase();
@@ -69,12 +68,10 @@ export function GrantTable({ searchQuery }: GrantTableProps) {
     });
   }, [filteredData, sortField, sortDirection]);
 
-  // --- PAGINATION ---
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentData = sortedData.slice(startIndex, startIndex + itemsPerPage);
 
-  // --- HELPERS ---
   const getStatusColor = (status: string) => {
     if (status === 'Active') return 'outline'; 
     if (status === 'Terminated') return 'destructive';
@@ -118,7 +115,7 @@ export function GrantTable({ searchQuery }: GrantTableProps) {
                 <TableHead><SortButton field="awarding_office" label="Agency" /></TableHead>
                 <TableHead className="text-right"><SortButton field="award_amount" label="Amount" /></TableHead>
                 <TableHead><SortButton field="grant_status" label="Status" /></TableHead>
-                <TableHead>Bias Flags</TableHead>
+                {/* <TableHead>Bias Flags</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -138,7 +135,7 @@ export function GrantTable({ searchQuery }: GrantTableProps) {
                       {item.grant_status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <div className="flex flex-wrap gap-1 max-w-[150px]">
                       {parseFlags(item.bias_flags).length > 0 ? (
                         parseFlags(item.bias_flags).map((flag, i) => (
@@ -146,7 +143,7 @@ export function GrantTable({ searchQuery }: GrantTableProps) {
                         ))
                       ) : <span className="text-xs text-slate-300">-</span>}
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>
