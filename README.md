@@ -3,7 +3,7 @@
 ## Description
 The Grant Termination Dashboard is an interactive web interface designed to help users explore machine learing predictions, examine language patterns associated with grant termination, and assess potential model bias. The dashboard is organized into four separate panels, each supporting a specific component of our model. 
 ### Filters & Controls Panel
-The top panel provides information on the entire dataset, including total test set size, termination rate, and average predicted termination probability. Users can filter grants by keywords or text search (ex. “rural”, “HIV”, “pediatric”).
+The top panel provides information on the entire dataset, including total test set size and termination rate. Users can filter grants by text search.
 ### Termination Word Cloud
 This view highlights keywords most strongly associated with termination predictions.
 
@@ -16,7 +16,7 @@ Selecting any term highlights related grants and shows their termination probabi
 This module visualizes how predicted termination outcomes vary across demographics (Race/Ethnicity, Gender, Mental Health, LGBTQ, Climate). It includes a table summarizing the overall impact of each category on termination risk.  
 
 ### Grant Details Table
-This searchable, sortable table provides data per grant, including information such as termination status, bias flags, recipient, etc.
+This searchable, sortable table provides data per grant, including information such as termination status, recipient, etc.
 
 ## Installation
 Before running the project, ensure you have the following installed:
