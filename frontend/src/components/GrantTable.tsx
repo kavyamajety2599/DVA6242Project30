@@ -3,25 +3,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { type Grant } from './data/GrantData';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import projectData from './data/final_project_data.json';
 
-type SortField = 'title' | 'field' | 'probability' | 'confidence';
+// --- 2. DEFINE LOCAL INTERFACE FOR THE JSON STRUCTURE ---
+interface ProjectData {
+  award_number: string;
+  project_title: string;
+  recipient_name: string;
+  awarding_office: string;
+  award_amount: number;
+  grant_status: string;
+  bias_flags: string | null; // It comes as a string "race, gender" or null
+}
 
+// We ignore the props passed from parent since we are using the JSON directly
 interface GrantTableProps {
-  grants: Grant[];
+  grants: any[]; 
   showAdjusted: boolean;
 }
 
-type SortDirection = 'asc' | 'desc';
+export function GrantTable({ grants: _ignoredGrants }: GrantTableProps) {
+  // Use the imported JSON as the data source
+  const data = projectData as ProjectData[];
 
-export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
-  const [sortField, setSortField] = useState<SortField>('probability');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [sortField, setSortField] = useState<keyof ProjectData>('award_amount');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  const handleSort = (field: SortField) => {
+  // --- Sorting Logic ---
+  const handleSort = (field: keyof ProjectData) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -30,65 +42,53 @@ export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
     }
   };
 
-  const sortedGrants = useMemo(() => {
-    const sorted = [...grants].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+  const sortedData = useMemo(() => {
+    return [...data].sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
 
-      switch (sortField) {
-        case 'title':
-          aValue = a.title;
-          bValue = b.title;
-          break;
-        case 'field':
-          aValue = a.field;
-          bValue = b.field;
-          break;
-        case 'probability':
-        case 'confidence':
-          aValue = showAdjusted && (a as any).adjustedTerminationProb !== undefined
-            ? (a as any).adjustedTerminationProb
-            : a.terminationProbability;
-          bValue = showAdjusted && (b as any).adjustedTerminationProb !== undefined
-            ? (b as any).adjustedTerminationProb
-            : b.terminationProbability;
-          break;
+      // Numeric Sort (Amount)
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       }
-
-      if (typeof aValue === 'string') {
+      // String Sort
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue)
+          ? aValue.localeCompare(bValue) 
           : bValue.localeCompare(aValue);
       }
-
-      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      return 0;
     });
+  }, [data, sortField, sortDirection]);
 
-    return sorted;
-  }, [grants, sortField, sortDirection, showAdjusted]);
-
-  const totalPages = Math.ceil(sortedGrants.length / itemsPerPage);
+  // --- Pagination ---
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentGrants = sortedGrants.slice(startIndex, endIndex);
+  const currentData = sortedData.slice(startIndex, startIndex + itemsPerPage);
 
-  const getSeverityColor = (severity: 'Low' | 'Moderate' | 'High') => {
-    switch (severity) {
-      case 'High': return 'destructive';
-      case 'Moderate': return 'default';
-      case 'Low': return 'secondary';
-    }
+  // --- Helpers ---
+  const getStatusColor = (status: string) => {
+    if (status === 'Active') return 'outline'; 
+    if (status === 'Terminated') return 'destructive';
+    return 'secondary';
   };
 
-  const SortButton = ({ field, label }: { field: SortField; label: string }) => (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={() => handleSort(field)}
-      className="h-8 -ml-3"
-    >
-      {label}
-      <ArrowUpDown className="ml-2 h-3 w-3" />
+  const getBiasColor = (bias: string) => {
+    const b = bias.toLowerCase();
+    if (b.includes('race') || b.includes('gender') || b.includes('equity')) return 'destructive';
+    if (b.includes('climate') || b.includes('environment')) return 'default';
+    return 'secondary';
+  };
+
+  // Helper to parse "race, gender" string into array
+  const parseFlags = (flagStr: string | null) => {
+    if (!flagStr) return [];
+    return flagStr.split(',').map(s => s.trim()).filter(s => s);
+  };
+
+  const SortButton = ({ field, label }: { field: keyof ProjectData; label: string }) => (
+    <Button variant="ghost" size="sm" onClick={() => handleSort(field)} className="h-8 -ml-3 font-bold text-slate-700">
+      {label} <ArrowUpDown className="ml-2 h-3 w-3" />
     </Button>
   );
 
@@ -97,110 +97,89 @@ export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
       <CardHeader>
         <CardTitle>Grant Details</CardTitle>
         <CardDescription>
-          Showing {startIndex + 1}-{Math.min(endIndex, sortedGrants.length)} of {sortedGrants.length} grants
+          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} records from Project Data
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-hidden">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50">
               <TableRow>
-                <TableHead className="w-[300px]">
-                  <SortButton field="title" label="Title" />
-                </TableHead>
-                {/* <TableHead>
-                  <SortButton field="agency" label="Agency" />
-                </TableHead> */}
-                <TableHead>
-                  <SortButton field="field" label="Field" />
-                </TableHead>
-                <TableHead>Outcome</TableHead>
-                <TableHead>
-                  <SortButton field="confidence" label="Confidence" />
-                </TableHead>
-                <TableHead>Keywords</TableHead>
-                <TableHead>Bias Flags</TableHead>
+                <TableHead className="w-[140px]"><SortButton field="award_number" label="Award #" /></TableHead>
+                <TableHead className="w-[350px]"><SortButton field="project_title" label="Project Title" /></TableHead>
+                <TableHead className="w-[200px]"><SortButton field="recipient_name" label="Recipient" /></TableHead>
+                <TableHead><SortButton field="awarding_office" label="Agency" /></TableHead>
+                <TableHead className="text-right"><SortButton field="award_amount" label="Amount" /></TableHead>
+                <TableHead><SortButton field="grant_status" label="Status" /></TableHead>
+                {/* <TableHead>Bias Flags</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentGrants.map((grant) => {
-                const confidence = showAdjusted && (grant as any).adjustedTerminationProb !== undefined
-                  ? (grant as any).adjustedTerminationProb
-                  : grant.terminationProbability;
+              {currentData.map((item, idx) => (
+                <TableRow key={`${item.award_number}-${idx}`} className="hover:bg-slate-50">
+                  
+                  {/* Award Number */}
+                  <TableCell className="font-mono text-xs font-medium text-slate-600">
+                    {item.award_number}
+                  </TableCell>
 
-                return (
-                  <TableRow key={grant.id} className="hover:bg-slate-50">
-                    <TableCell className="font-medium">
-                      <div className="max-w-[300px] truncate" title={grant.title}>
-                        {grant.title}
-                      </div>
-                    </TableCell>
-                    {/* <TableCell>
-                      <Badge variant="outline">{grant.agency}</Badge>
-                    </TableCell> */}
-                    <TableCell>
-                      <span className="text-sm text-slate-600">{grant.field}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={grant.terminated ? "destructive" : "default"}>
-                        {grant.terminated ? 'Terminated' : 'Active'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 bg-slate-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              confidence > 0.6 ? 'bg-red-500' : confidence > 0.3 ? 'bg-yellow-500' : 'bg-green-500'
-                            }`}
-                            style={{ width: `${confidence * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium">
-                          {(confidence * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {grant.keywords.slice(0, 3).map((keyword, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {keyword}
+                  {/* Title */}
+                  <TableCell>
+                    <div className="max-w-[350px] text-sm font-medium text-slate-900 truncate" title={item.project_title}>
+                      {item.project_title}
+                    </div>
+                  </TableCell>
+
+                  {/* Recipient */}
+                  <TableCell className="text-xs text-slate-600 max-w-[200px] truncate" title={item.recipient_name}>
+                    {item.recipient_name}
+                  </TableCell>
+
+                  {/* Agency */}
+                  <TableCell>
+                    <Badge variant="outline" className="font-normal text-slate-600">
+                      {item.awarding_office}
+                    </Badge>
+                  </TableCell>
+
+                  {/* Amount */}
+                  <TableCell className="text-right font-mono text-sm text-slate-700">
+                    {item.award_amount 
+                      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(item.award_amount)
+                      : <span className="text-slate-400">-</span>}
+                  </TableCell>
+
+                  {/* Status */}
+                  <TableCell>
+                    <Badge variant={getStatusColor(item.grant_status)} className={item.grant_status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : ''}>
+                      {item.grant_status}
+                    </Badge>
+                  </TableCell>
+
+                  {/* Bias Flags
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1 max-w-[150px]">
+                      {parseFlags(item.bias_flags).length > 0 ? (
+                        parseFlags(item.bias_flags).map((flag, i) => (
+                          <Badge key={i} variant={getBiasColor(flag)} className="text-[10px] px-1 py-0 h-5">
+                            {flag}
                           </Badge>
-                        ))}
-                        {grant.keywords.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{grant.keywords.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {grant.biasFlags.length > 0 ? (
-                          grant.biasFlags.map((flag, i) => (
-                            <Badge
-                              key={i}
-                              variant={getSeverityColor(flag.severity)}
-                              className="text-xs"
-                              title={`${flag.type}: +${flag.impact.toFixed(1)}%`}
-                            >
-                              {flag.type}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-sm text-slate-400">None</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-300">-</span>
+                      )}
+                    </div>
+                  </TableCell> */}
+
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination Controls */}
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-500">
             Page {currentPage} of {totalPages}
           </p>
           <div className="flex gap-2">
@@ -210,8 +189,7 @@ export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
+              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
             </Button>
             <Button
               variant="outline"
@@ -219,8 +197,7 @@ export function GrantTable({ grants, showAdjusted }: GrantTableProps) {
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
             >
-              Next
-              <ChevronRight className="h-4 w-4" />
+              Next <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
         </div>

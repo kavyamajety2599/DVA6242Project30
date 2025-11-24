@@ -17,45 +17,56 @@ export function WordCloud({ keywordData }: WordCloudProps) {
       <Card className="h-full">
         <CardHeader>
           <CardTitle>Termination Word Cloud</CardTitle>
-          <CardDescription>No keyword data available for the current filters.</CardDescription>
+          <CardDescription>No keyword data available.</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center min-h-[300px] text-slate-400">
-          Try adjusting your search or year range.
+          Try adjusting your search filters.
         </CardContent>
       </Card>
     );
   }
 
+  // --- LOGIC: Ensure a mix of Risk and Protective terms ---
+  
+  // 1. Split keywords into categories
+  const riskKeywords = keywordData.filter(k => k.riskLevel !== 'Protective');
+  const protectiveKeywords = keywordData.filter(k => k.riskLevel === 'Protective');
 
-  const topKeywords = keywordData.slice(0, 30);
-
+  // 2. Select Top 30 Risk words + Top 10 Protective words
+  // This guarantees blue "Protective" words show up even if Risk words dominate the top of the list
+  const topKeywords = [
+    ...riskKeywords.slice(0, 30),
+    ...protectiveKeywords.slice(0, 10)
+  ].sort((a, b) => b.frequency - a.frequency); // Re-sort by frequency for the visual layout
 
   const maxFreq = Math.max(...topKeywords.map(k => k.frequency), 0);
   const minFreq = Math.min(...topKeywords.map(k => k.frequency), maxFreq);
 
   const getSize = (freq: number) => {
     const denominator = maxFreq - minFreq;
-
-    if (denominator === 0) return 24; 
-    
+    if (denominator === 0) return 24;
     const normalized = (freq - minFreq) / denominator;
-    return 12 + normalized * 32; 
+    return 14 + normalized * 26; // Font size 14px to 40px
   };
 
-  const getColor = (weight: number) => {
-    if (weight > 0.1) return 'text-red-600';
-    if (weight > 0.05) return 'text-orange-500';
-    if (weight > 0) return 'text-yellow-600';
-    if (weight > -0.05) return 'text-blue-500';
-    return 'text-blue-700';
+  const getColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'High Risk': return 'text-red-600';
+      case 'Mod Risk': return 'text-orange-600';
+      case 'Low Risk': return 'text-yellow-600';
+      case 'Protective': return 'text-blue-600';
+      default: return 'text-slate-600';
+    }
   };
 
-  const getBackgroundColor = (weight: number) => {
-    if (weight > 0.1) return 'bg-red-50 hover:bg-red-100';
-    if (weight > 0.05) return 'bg-orange-50 hover:bg-orange-100';
-    if (weight > 0) return 'bg-yellow-50 hover:bg-yellow-100';
-    if (weight > -0.05) return 'bg-blue-50 hover:bg-blue-100';
-    return 'bg-blue-50 hover:bg-blue-100';
+  const getBackgroundColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'High Risk': return 'bg-red-50 hover:bg-red-100 border-red-100';
+      case 'Mod Risk': return 'bg-orange-50 hover:bg-orange-100 border-orange-100';
+      case 'Low Risk': return 'bg-yellow-50 hover:bg-yellow-100 border-yellow-100';
+      case 'Protective': return 'bg-blue-50 hover:bg-blue-100 border-blue-100';
+      default: return 'bg-slate-50 hover:bg-slate-100';
+    }
   };
 
   return (
@@ -64,24 +75,24 @@ export function WordCloud({ keywordData }: WordCloudProps) {
         <CardHeader>
           <CardTitle>Termination Word Cloud</CardTitle>
           <CardDescription>
-            Keywords correlated with grant termination. Size = frequency, Color = impact direction
+            Key terms by frequency. Color indicates termination risk level.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="min-h-[400px] flex flex-wrap gap-3 items-center justify-center p-4 content-start">
             {topKeywords.map((keyword, index) => {
               const fontSize = getSize(keyword.frequency);
-              const colorClass = getColor(keyword.terminationWeight);
-              const bgClass = getBackgroundColor(keyword.terminationWeight);
+              const colorClass = getColor(keyword.riskLevel);
+              const bgClass = getBackgroundColor(keyword.riskLevel);
 
               return (
                 <button
                   key={index}
                   onClick={() => setSelectedKeyword(keyword)}
-                  className={`${bgClass} px-3 py-1 rounded-lg transition-all cursor-pointer border border-transparent hover:border-slate-300`}
+                  className={`${bgClass} px-3 py-1 rounded-lg transition-all cursor-pointer border hover:border-slate-300 shadow-sm`}
                   style={{ fontSize: `${fontSize}px` }}
                 >
-                  <span className={`${colorClass} font-medium`}>
+                  <span className={`${colorClass} font-medium capitalize`}>
                     {keyword.keyword}
                   </span>
                 </button>
@@ -90,22 +101,22 @@ export function WordCloud({ keywordData }: WordCloudProps) {
           </div>
 
           <div className="mt-4 pt-4 border-t space-y-2">
-            <p className="text-sm font-medium text-slate-700">Legend:</p>
+            <p className="text-sm font-medium text-slate-700">Risk Legend:</p>
             <div className="flex flex-wrap gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-500 rounded"></div>
-                <span className="text-slate-600">High risk (+10%)</span>
+                <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                <span className="text-slate-600">High Risk</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-orange-500 rounded"></div>
-                <span className="text-slate-600">Moderate risk (+5%)</span>
+                <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
+                <span className="text-slate-600">Mod Risk</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                <span className="text-slate-600">Slight risk</span>
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span className="text-slate-600">Low Risk</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
                 <span className="text-slate-600">Protective</span>
               </div>
             </div>
@@ -113,44 +124,41 @@ export function WordCloud({ keywordData }: WordCloudProps) {
         </CardContent>
       </Card>
 
+      {/* Keyword Detail Dialog */}
       <Dialog open={!!selectedKeyword} onOpenChange={() => setSelectedKeyword(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 capitalize">
               Keyword: "{selectedKeyword?.keyword}"
-              {selectedKeyword && selectedKeyword.terminationWeight > 0 ? (
-                <TrendingUp className="w-5 h-5 text-red-600" />
+              {selectedKeyword?.riskLevel.includes('Risk') ? (
+                <TrendingUp className={`w-5 h-5 ${getColor(selectedKeyword.riskLevel || '')}`} />
               ) : (
                 <TrendingDown className="w-5 h-5 text-blue-600" />
               )}
             </DialogTitle>
             <DialogDescription>
-              Detailed analysis and sample grants containing this keyword
+              Analysis based on {selectedKeyword?.count} matching grants
             </DialogDescription>
           </DialogHeader>
 
           {selectedKeyword && (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Frequency</p>
-                  <p className="text-xl font-bold text-slate-900">{selectedKeyword.frequency}</p>
+                  <p className="text-sm text-slate-600">Risk Category</p>
+                  <Badge variant="outline" className={`${getColor(selectedKeyword.riskLevel)} border-current mt-1`}>
+                    {selectedKeyword.riskLevel}
+                  </Badge>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Avg Termination Rate</p>
+                  <p className="text-sm text-slate-600">Frequency Score</p>
                   <p className="text-xl font-bold text-slate-900">
-                    {(selectedKeyword.avgTerminationRate * 100).toFixed(1)}%
-                  </p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Impact Weight</p>
-                  <p className="text-xl font-bold text-slate-900">
-                    {selectedKeyword.terminationWeight > 0 ? '+' : ''}
-                    {(selectedKeyword.terminationWeight * 100).toFixed(1)}%
+                    {selectedKeyword.frequency.toFixed(4)}
                   </p>
                 </div>
               </div>
 
+              {/* Sample Grants List */}
               <div>
                 <h4 className="font-medium text-slate-900 mb-3">Sample Grants</h4>
                 <div className="space-y-2">
@@ -164,16 +172,18 @@ export function WordCloud({ keywordData }: WordCloudProps) {
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm text-slate-900 flex-1 truncate">
+                        <p className="text-sm text-slate-900 flex-1 truncate" title={grant.title}>
                           {grant.title}
                         </p>
                         <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant={grant.terminated ? "destructive" : "default"}>
-                            {grant.terminated ? 'Terminated' : 'Active'}
-                          </Badge>
-                          <Badge variant="secondary">
+                          {grant.terminated ? (
+                            <Badge variant="destructive">Terminated</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-green-700 border-green-200 bg-white">Active</Badge>
+                          )}
+                          <span className="text-xs text-slate-500 font-mono">
                             {(grant.confidence * 100).toFixed(0)}%
-                          </Badge>
+                          </span>
                         </div>
                       </div>
                     </div>

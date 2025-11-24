@@ -1,157 +1,190 @@
 import grantsData from './grants.json';
+import wordBiasData from './word_bias.json';
+import grantTableData from './final_project_data.json';
 
 export interface Grant {
   id: string;
+  awardNumber: string;
   title: string;
-  field: string;
-  year: number;
+  recipient: string;
   agency: string;
   amount: number;
-  gender: "Male" | "Female";
-  race: "Minority" | "Non-Minority";
-  institutionPrestige: "High" | "Medium" | "Low";
-  piExperience: number;
-  sentiment: number;
-  languageComplexity: number; 
-  technicalTermDensity: number;
-  readabilityScore: number; 
-  proposalLength: number; 
+  status: string;
+  year: number;
+  
   terminated: boolean;
-  terminationProbability: number; 
+  terminationProbability: number;
   modelPrediction: number;
+  
   keywords: string[];
   biasFlags: BiasFlag[];
+  
+  gender: string;
+  race: string;
+  institutionPrestige: string;
+  piExperience: number;
+  sentiment: number;
+  readabilityScore: number;
+  proposalLength: number;
 }
 
 export interface BiasFlag {
-  type: "Gender" | "Race" | "Institution" | "Experience";
+  type: string;
   severity: "Low" | "Moderate" | "High";
   impact: number; 
 }
 
-export interface BiasAdjustments {
-  genderBias: number;
-  raceBias: number;
-  institutionBias: number;
-  experienceBias: number;
-}
-
 export interface KeywordData {
   keyword: string;
-  terminationWeight: number; 
-  frequency: number;
+  frequency: number;          
+  riskLevel: string;          
   avgTerminationRate: number; 
-  sampleGrants: {
-    title: string;
-    terminated: boolean;
-    confidence: number;
-  }[];
+  count: number;              
+  sampleGrants: { title: string; terminated: boolean; confidence: number; }[];
 }
 
 export interface FairnessMetrics {
   demographicParity: {
     gender: number;
     race: number;
-    institution: number;
+    mentalHealth: number;
+    lgbtq: number;
+    climate: number;
   };
   equalityOfOpportunity: {
     gender: number;
     race: number;
-    institution: number;
+    mentalHealth: number;
+    lgbtq: number;
+    climate: number;
   };
 }
 
-// --- Main Data Loading Function ---
+// --- DATA LOADING & MAPPING ---
 export function generateGrantData(): Grant[] {
-  // Directly return the imported JSON data
-  // We cast it to Grant[] to ensure TypeScript is happy with the types
-  return grantsData as unknown as Grant[];
+  // 1. Create a Metadata Lookup Map from final_project_data.json
+  // Key: award_number, Value: The full metadata object
+  const metadataMap = new Map<string, any>();
+  (grantTableData as any[]).forEach((item) => {
+    if (item.award_number) {
+      metadataMap.set(item.award_number, item);
+    }
+  });
+
+  // 2. Map the grants.json data, overriding fields with metadata if a match is found
+  return (grantsData as any[]).map((item) => {
+    // Normalize the ID to match against the lookup map
+    const awardNum = String(item.awardNumber || item.award_number || item.id || "Unknown");
+    
+    const meta = metadataMap.get(awardNum) || {};
+   // console.log(grantTableData);
+    return {
+      ...item,
+      id: String(item.id || awardNum),
+      awardNumber: awardNum,
+      
+      title: meta.Project || "Untitled Project",
+      recipient: meta.recipient_name || "Unknown Recipient",
+      agency: meta.awarding_office || "Unknown Agency",
+      amount: Number(meta.award_amount || 0),
+      status: meta.grant_status || "Unknown",
+
+      
+      year: Number(item.year || 2025),
+      terminated: !!item.terminated,
+      terminationProbability: Number(item.terminationProbability || 0),
+      modelPrediction: Number(item.modelPrediction || 0),
+      keywords: Array.isArray(item.keywords) ? item.keywords : [],
+      biasFlags: Array.isArray(item.biasFlags) ? item.biasFlags : [],
+      
+      gender: item.gender || "Unknown",
+      race: item.race || "Unknown",
+      institutionPrestige: item.institutionPrestige || "Medium",
+      piExperience: Number(item.piExperience || 5),
+      sentiment: Number(item.sentiment || 0),
+      readabilityScore: Number(item.readabilityScore || 50),
+      proposalLength: Number(item.proposalLength || 0)
+    };
+  });
 }
 
-// --- Metric Calculation Functions ---
-
 export function calculateKeywordData(grants: Grant[]): KeywordData[] {
-  const keywordMap = new Map<string, {
-      totalCount: number;
-      terminatedCount: number;
-      sampleGrants: { title: string; terminated: boolean; confidence: number; }[];
-    }>();
+  const biasLookup = new Map<string, any>();
+  (wordBiasData as any[]).forEach((item: any) => {
+    if (item.term) biasLookup.set(item.term.toLowerCase(), item);
+  });
 
+  const keywordMap = new Map<string, any>();
   grants.forEach((grant) => {
     grant.keywords.forEach((keyword) => {
-      if (!keywordMap.has(keyword)) {
-        keywordMap.set(keyword, { totalCount: 0, terminatedCount: 0, sampleGrants: [] });
-      }
-      const data = keywordMap.get(keyword)!;
-      data.totalCount++;
-      if (grant.terminated) data.terminatedCount++;
-      
-      // Keep a sample of up to 5 grants for the tooltip
-      if (data.sampleGrants.length < 5) {
-        data.sampleGrants.push({
-          title: grant.title,
-          terminated: grant.terminated,
-          confidence: grant.terminationProbability,
-        });
+      const lowerKey = keyword.toLowerCase();
+      if (biasLookup.has(lowerKey)) {
+        if (!keywordMap.has(lowerKey)) keywordMap.set(lowerKey, { totalCount: 0, terminatedCount: 0, sampleGrants: [] });
+        const data = keywordMap.get(lowerKey);
+        data.totalCount++;
+        if (grant.terminated) data.terminatedCount++;
+        if (data.sampleGrants.length < 5) {
+          data.sampleGrants.push({ title: grant.title, terminated: grant.terminated, confidence: grant.terminationProbability });
+        }
       }
     });
   });
 
-  const overallTerminationRate = grants.filter((g) => g.terminated).length / (grants.length || 1);
   const keywordData: KeywordData[] = [];
-  
   keywordMap.forEach((data, keyword) => {
-    const avgTerminationRate = data.terminatedCount / (data.totalCount || 1);
-    const terminationWeight = avgTerminationRate - overallTerminationRate;
-
-    keywordData.push({
-      keyword,
-      terminationWeight,
-      frequency: data.totalCount,
-      avgTerminationRate,
-      sampleGrants: data.sampleGrants,
-    });
+    const biasInfo = biasLookup.get(keyword);
+    if (biasInfo) {
+      keywordData.push({
+        keyword: biasInfo.term,
+        frequency: biasInfo.avg_tfidf_freq, 
+        riskLevel: biasInfo.risk_level,     
+        avgTerminationRate: data.terminatedCount / (data.totalCount || 1),
+        count: data.totalCount,
+        sampleGrants: data.sampleGrants,
+      });
+    }
   });
 
-  return keywordData.sort((a, b) => Math.abs(b.terminationWeight) - Math.abs(a.terminationWeight));
+  const riskPriority: Record<string, number> = { 'High Risk': 4, 'Mod Risk': 3, 'Low Risk': 2, 'Protective': 1 };
+  return keywordData.sort((a, b) => {
+    const pA = riskPriority[a.riskLevel] || 0;
+    const pB = riskPriority[b.riskLevel] || 0;
+    return pA !== pB ? pB - pA : b.frequency - a.frequency;
+  });
 }
 
 export function calculateFairnessMetrics(grants: Grant[], showAdjusted: boolean = false): FairnessMetrics {
-  const getProbability = (g: Grant) =>
-    showAdjusted && (g as any).adjustedTerminationProb !== undefined
-      ? (g as any).adjustedTerminationProb
-      : g.terminationProbability;
+  const getProbability = (g: Grant) => g.terminationProbability;
 
-  const calculateMetrics = (groupKey: keyof Grant, groupA: string, groupB: string) => {
-    const groupAData = grants.filter((g) => g[groupKey] === groupA);
-    const groupBData = grants.filter((g) => g[groupKey] === groupB);
+  const calcMetrics = (biasType: string) => {
+    const flagged = grants.filter(g => g.biasFlags.some(f => f.type === biasType));
+    const baseline = grants.filter(g => !g.biasFlags.some(f => f.type === biasType));
     
-    const probA = groupAData.reduce((sum, g) => sum + getProbability(g), 0) / (groupAData.length || 1);
-    const probB = groupBData.reduce((sum, g) => sum + getProbability(g), 0) / (groupBData.length || 1);
-    const dp = Math.min(probA, probB) / (Math.max(probA, probB) || 1);
+    const probF = flagged.reduce((s, g) => s + getProbability(g), 0) / (flagged.length || 1);
+    const probB = baseline.reduce((s, g) => s + getProbability(g), 0) / (baseline.length || 1);
+    const dp = Math.min(probF, probB) / (Math.max(probF, probB) || 1);
 
-    // Equality of Opportunity: Ratio of Actual Termination Rates
-    const rateA = groupAData.filter(g => g.terminated).length / (groupAData.length || 1);
-    const rateB = groupBData.filter(g => g.terminated).length / (groupBData.length || 1);
-    const eo = Math.min(rateA, rateB) / (Math.max(rateA, rateB) || 1);
+    const rateF = flagged.filter(g => g.terminated).length / (flagged.length || 1);
+    const rateB = baseline.filter(g => g.terminated).length / (baseline.length || 1);
+    const eo = Math.min(rateF, rateB) / (Math.max(rateF, rateB) || 1);
     
     return { dp, eo };
   };
 
-  const genderMetrics = calculateMetrics('gender', 'Male', 'Female');
-  const raceMetrics = calculateMetrics('race', 'Minority', 'Non-Minority');
-  const institutionMetrics = calculateMetrics('institutionPrestige', 'High', 'Low');
-
   return {
     demographicParity: {
-      gender: genderMetrics.dp,
-      race: raceMetrics.dp,
-      institution: institutionMetrics.dp,
+      gender: calcMetrics("Gender").dp,
+      race: calcMetrics("Race").dp,
+      mentalHealth: calcMetrics("MentalHealth").dp,
+      lgbtq: calcMetrics("LGBTQ").dp,
+      climate: calcMetrics("Climate").dp,
     },
     equalityOfOpportunity: {
-      gender: genderMetrics.eo,
-      race: raceMetrics.eo,
-      institution: institutionMetrics.eo,
+      gender: calcMetrics("Gender").eo,
+      race: calcMetrics("Race").eo,
+      mentalHealth: calcMetrics("MentalHealth").eo,
+      lgbtq: calcMetrics("LGBTQ").eo,
+      climate: calcMetrics("Climate").eo,
     },
   };
 }
