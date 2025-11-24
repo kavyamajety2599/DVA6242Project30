@@ -33,7 +33,7 @@ git clone https://github.com/kavyamajety2599/DVA6242Project30.git
 ```
 Once the dependencies are installed, navigate to the `frontend` folder and run the server:
 ```bash
-cd code/frontend/src
+cd frontend/src
 npm run dev
 ```
 The output will be an HTTP local server address; copy and paste this into your web browser to view and interact with the Grant Termination Dashboard!
