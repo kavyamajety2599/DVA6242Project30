@@ -15,8 +15,6 @@ Selecting any term highlights related grants and shows their termination probabi
 ### Bias Analysis & Fairness Metrics
 This module visualizes how predicted termination outcomes vary across demographics (Race/Ethnicity, Gender, Mental Health, LGBTQ, Climate). It includes a table summarizing the overall impact of each category on termination risk.  
 
-Differences between the two values may indicate representational or predictive bias. Users can also view fairness metrics such as Demographic Parity (DP) and Equality of Opportunity (EO), where values close to 1.00 indicate equitable behavior across groups.
-
 ### Grant Details Table
 This searchable, sortable table provides data per grant, including information such as termination status, bias flags, recipient, etc.
 
